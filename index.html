@@ -3,453 +3,161 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RdSAP AI Document Search</title>
-  <meta name="description" content="GitHub Pages-ready RdSAP document search and AI assistant with browser-side PDF scanning and added documents." />
+  <title>RdSAP AI Answer Assistant</title>
+  <meta name="description" content="Semantic-answering RdSAP assistant with browser-side AI retrieval." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.min.mjs" type="module"></script>
   <style>
-    :root, [data-theme="light"] {
-      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
-      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
-      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
-      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
-      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
-      --text-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.5rem);
-      --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem; --space-16: 4rem;
-      --color-bg:#f7f6f2; --color-surface:#f9f8f5; --color-surface-2:#fbfbf9; --color-surface-offset:#edeae5; --color-border:#d4d1ca; --color-text:#28251d; --color-text-muted:#5f5d57; --color-text-faint:#8d8a84; --color-text-inverse:#f9f8f4; --color-primary:#01696f; --color-primary-hover:#0c4e54; --color-primary-highlight:#cedcd8; --color-warning:#964219; --shadow-sm:0 1px 2px rgba(0,0,0,.05); --shadow-md:0 8px 28px rgba(0,0,0,.08); --radius-sm:.5rem; --radius-md:.75rem; --radius-lg:1rem; --radius-xl:1.25rem; --transition:180ms cubic-bezier(0.16,1,0.3,1); --font-body:'Instrument Sans', system-ui, sans-serif; --font-display:'Fraunces', Georgia, serif;
-    }
-    [data-theme="dark"] {
-      --color-bg:#171614; --color-surface:#1c1b19; --color-surface-2:#201f1d; --color-surface-offset:#22211f; --color-border:#393836; --color-text:#e3e1dc; --color-text-muted:#b6b2aa; --color-text-faint:#8a867f; --color-text-inverse:#171614; --color-primary:#66b0b8; --color-primary-hover:#8cc6cd; --color-primary-highlight:#263437; --color-warning:#d3a07d; --shadow-sm:0 1px 2px rgba(0,0,0,.25); --shadow-md:0 8px 28px rgba(0,0,0,.38);
-    }
-    * { box-sizing:border-box; }
-    body { margin:0; min-height:100dvh; font-family:var(--font-body); font-size:var(--text-base); line-height:1.6; color:var(--color-text); background:radial-gradient(circle at top right, var(--color-primary-highlight), transparent 28%), var(--color-bg); }
-    img, svg { max-width:100%; display:block; }
-    button, input, textarea { font:inherit; }
-    button { cursor:pointer; border:0; }
-    .skip-link { position:absolute; left:-9999px; }
-    .skip-link:focus { left:1rem; top:1rem; background:var(--color-primary); color:var(--color-text-inverse); padding:.75rem 1rem; border-radius:var(--radius-sm); z-index:99; }
-    .shell { display:grid; grid-template-columns: 340px 1fr; min-height:100dvh; }
-    .sidebar { position:sticky; top:0; height:100dvh; padding:var(--space-6); border-right:1px solid var(--color-border); background:color-mix(in srgb, var(--color-surface) 88%, transparent); backdrop-filter: blur(12px); overflow:auto; }
-    .main { padding:var(--space-6); }
-    .logo { display:flex; gap:.85rem; align-items:center; margin-bottom:var(--space-6); }
-    .logo svg { width:44px; height:44px; color:var(--color-primary); }
-    .logo strong { display:block; font-size:var(--text-lg); line-height:1.05; }
-    .logo span { display:block; color:var(--color-text-muted); font-size:var(--text-sm); }
-    .stack { display:grid; gap:var(--space-4); }
-    .panel, .hero-card { background:var(--color-surface); border:1px solid color-mix(in srgb, var(--color-text) 10%, transparent); border-radius:var(--radius-xl); box-shadow:var(--shadow-sm); }
-    .panel { padding:var(--space-4); }
-    .hero { display:grid; grid-template-columns:1.2fr .8fr; gap:var(--space-6); margin-bottom:var(--space-6); }
-    .hero-card { padding:clamp(1.5rem, 2vw, 2.2rem); box-shadow:var(--shadow-md); }
-    .hero h1 { margin:0 0 1rem; font-family:var(--font-display); font-size:var(--text-2xl); line-height:1.02; max-width:12ch; }
-    .hero p { margin:0 0 1rem; color:var(--color-text-muted); max-width:62ch; }
-    .kicker { color:var(--color-primary); text-transform:uppercase; letter-spacing:.12em; font-size:var(--text-sm); font-weight:700; margin-bottom:.8rem; }
-    .chips, .quick-questions, .source-list { display:flex; flex-wrap:wrap; gap:.65rem; }
-    .chip, .source-pill { display:inline-flex; align-items:center; padding:.45rem .7rem; border-radius:999px; background:var(--color-primary-highlight); color:var(--color-text); font-size:var(--text-sm); }
-    .btn, .link-btn, .theme-toggle, .upload-label { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border-radius:999px; padding:.8rem 1rem; transition: background var(--transition), transform var(--transition), border-color var(--transition); text-decoration:none; }
-    .btn, .link-btn { background:var(--color-primary); color:var(--color-text-inverse); }
-    .btn:hover, .link-btn:hover { background:var(--color-primary-hover); }
-    .theme-toggle, .upload-label { background:var(--color-surface-offset); color:var(--color-text); border:1px solid var(--color-border); }
-    .upload-label input { display:none; }
-    .quick-questions button { background:var(--color-surface-offset); color:var(--color-text); border:1px solid var(--color-border); border-radius:999px; padding:.7rem .9rem; }
-    .metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--space-3); margin-top:var(--space-4); }
-    .metric { padding:var(--space-4); border-radius:var(--radius-lg); background:var(--color-surface-2); border:1px solid color-mix(in srgb, var(--color-text) 10%, transparent); }
-    .metric strong { display:block; font-size:var(--text-lg); }
-    .metric span { color:var(--color-text-muted); font-size:var(--text-sm); }
-    .workspace { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-6); }
-    .toolbar { display:grid; grid-template-columns:1fr auto; gap:var(--space-3); margin-bottom:var(--space-4); }
-    .input { width:100%; padding:1rem 1.05rem; border-radius:var(--radius-md); border:1px solid var(--color-border); background:var(--color-bg); color:var(--color-text); }
-    .results, .answers, .matches, .source-cards { display:grid; gap:var(--space-3); }
-    .card { padding:var(--space-4); border-radius:var(--radius-lg); background:var(--color-surface-2); border:1px solid color-mix(in srgb, var(--color-text) 10%, transparent); }
-    .card h3 { margin:0 0 .35rem; font-size:var(--text-base); }
-    .card p { margin:.35rem 0 0; color:var(--color-text-muted); }
-    .cite { display:inline-flex; margin-top:.75rem; padding:.24rem .55rem; border-radius:999px; font-size:var(--text-xs); background:var(--color-surface-offset); color:var(--color-text-muted); }
-    .small { font-size:var(--text-sm); color:var(--color-text-muted); }
-    .muted { color:var(--color-text-muted); }
-    .warn { color:var(--color-warning); }
-    .empty { padding:var(--space-4); border-radius:var(--radius-lg); border:1px dashed var(--color-border); color:var(--color-text-muted); background:var(--color-surface-2); }
-    .divider { height:1px; background:var(--color-border); margin:var(--space-4) 0; }
-    .highlight { background:color-mix(in srgb, var(--color-primary) 18%, #fff1a8); padding:.06rem .18rem; border-radius:.2rem; }
-    @media (max-width: 1024px) {
-      .shell, .hero, .workspace { grid-template-columns:1fr; }
-      .sidebar { position:relative; height:auto; border-right:0; border-bottom:1px solid var(--color-border); }
-      .metrics { grid-template-columns:1fr; }
-    }
-    @media (max-width: 640px) {
-      .main, .sidebar { padding:var(--space-4); }
-      .toolbar { grid-template-columns:1fr; }
-    }
+    :root,[data-theme="light"]{--text-sm:clamp(.875rem,.8rem + .35vw,1rem);--text-base:clamp(1rem,.95rem + .25vw,1.125rem);--text-lg:clamp(1.125rem,1rem + .75vw,1.5rem);--text-xl:clamp(1.5rem,1.2rem + 1.25vw,2.25rem);--text-2xl:clamp(2rem,1.2rem + 2.5vw,3.5rem);--space-2:.5rem;--space-3:.75rem;--space-4:1rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--color-bg:#f7f6f2;--color-surface:#f9f8f5;--color-surface-2:#fbfbf9;--color-surface-offset:#edeae5;--color-border:#d4d1ca;--color-text:#28251d;--color-text-muted:#5f5d57;--color-text-inverse:#f9f8f4;--color-primary:#01696f;--color-primary-hover:#0c4e54;--color-primary-highlight:#cedcd8;--shadow:0 10px 28px rgba(0,0,0,.08);--radius:.95rem;--font-body:'Instrument Sans',system-ui,sans-serif;--font-display:'Fraunces',Georgia,serif}
+    [data-theme="dark"]{--color-bg:#171614;--color-surface:#1c1b19;--color-surface-2:#201f1d;--color-surface-offset:#22211f;--color-border:#393836;--color-text:#e3e1dc;--color-text-muted:#b6b2aa;--color-text-inverse:#171614;--color-primary:#66b0b8;--color-primary-hover:#8cc6cd;--color-primary-highlight:#263437;--shadow:0 10px 28px rgba(0,0,0,.35)}
+    *{box-sizing:border-box} body{margin:0;font-family:var(--font-body);background:radial-gradient(circle at top right,var(--color-primary-highlight),transparent 25%),var(--color-bg);color:var(--color-text);line-height:1.6} button,input{font:inherit} button{cursor:pointer;border:0} .shell{max-width:1200px;margin:0 auto;padding:var(--space-6)} .hero,.grid{display:grid;gap:var(--space-6)} .hero{grid-template-columns:1.1fr .9fr;margin-bottom:var(--space-6)} .grid{grid-template-columns:1fr 1fr} .card{background:var(--color-surface);border:1px solid color-mix(in srgb,var(--color-text) 10%,transparent);border-radius:1.2rem;padding:clamp(1.25rem,2vw,2rem);box-shadow:var(--shadow)} h1{margin:0 0 1rem;font-family:var(--font-display);font-size:var(--text-2xl);line-height:1.02;max-width:11ch} h2{margin:0 0 .8rem;font-size:var(--text-lg)} p{margin:.35rem 0 0;color:var(--color-text-muted)} .kicker{color:var(--color-primary);text-transform:uppercase;letter-spacing:.12em;font-size:var(--text-sm);font-weight:700;margin-bottom:.85rem} .chips{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1rem} .chip,.status{display:inline-flex;align-items:center;padding:.42rem .7rem;border-radius:999px;background:var(--color-primary-highlight);font-size:var(--text-sm)} .toolbar{display:grid;grid-template-columns:1fr auto;gap:var(--space-3);margin:.9rem 0 1rem} .input{width:100%;padding:1rem;border-radius:var(--radius);border:1px solid var(--color-border);background:var(--color-bg);color:var(--color-text)} .btn{background:var(--color-primary);color:var(--color-text-inverse);padding:.9rem 1.05rem;border-radius:999px} .btn:hover{background:var(--color-primary-hover)} .secondary{background:var(--color-surface-offset);color:var(--color-text);border:1px solid var(--color-border)} .results,.sources{display:grid;gap:var(--space-3)} .result{padding:1rem;border-radius:var(--radius);background:var(--color-surface-2);border:1px solid color-mix(in srgb,var(--color-text) 10%,transparent)} .cite{display:inline-flex;margin-top:.7rem;padding:.22rem .55rem;border-radius:999px;background:var(--color-surface-offset);font-size:.82rem;color:var(--color-text-muted)} .answer{font-size:1.02rem;color:var(--color-text)} .small{font-size:var(--text-sm)} .muted{color:var(--color-text-muted)} .good{color:#2f7d1f} .warn{color:#a55a18} .topbar{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:var(--space-6)} .logo{display:flex;align-items:center;gap:.8rem} .logo svg{width:42px;height:42px;color:var(--color-primary)} .quick{display:flex;flex-wrap:wrap;gap:.6rem}.quick button{padding:.65rem .8rem;border-radius:999px;background:var(--color-surface-offset);border:1px solid var(--color-border);color:var(--color-text)} .meter{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:1rem}.metric{padding:1rem;border-radius:var(--radius);background:var(--color-surface-2);border:1px solid color-mix(in srgb,var(--color-text) 10%,transparent)} .metric strong{display:block;font-size:var(--text-lg)} .banner{margin-bottom:1rem;padding:.9rem 1rem;border-radius:var(--radius);background:var(--color-surface-2);border:1px dashed var(--color-border)} @media(max-width:980px){.hero,.grid,.meter{grid-template-columns:1fr}.toolbar{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}}
   </style>
 </head>
 <body>
-<a class="skip-link" href="#main">Skip to content</a>
 <div class="shell">
-  <aside class="sidebar" aria-label="App controls">
+  <div class="topbar">
     <div class="logo">
-      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" aria-label="RdSAP AI logo">
-        <rect x="10" y="8" width="32" height="46" rx="8"></rect>
-        <path d="M20 20h12M20 30h12M20 40h12"></path>
-        <circle cx="46" cy="42" r="10"></circle>
-        <path d="M53 49l6 6"></path>
-      </svg>
-      <div>
-        <strong>RdSAP AI Search</strong>
-        <span>Live PDF + GitHub Pages</span>
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" aria-label="Logo"><rect x="10" y="8" width="32" height="46" rx="8"></rect><path d="M20 20h12M20 30h12M20 40h12"></path><circle cx="46" cy="42" r="10"></circle><path d="M53 49l6 6"></path></svg>
+      <div><strong>RdSAP AI Answer Assistant</strong><div class="small muted">Semantic search + clearer question answering</div></div>
+    </div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
+      <span class="status" id="modeStatus">AI mode: semantic ranking</span>
+      <button class="btn secondary" id="themeToggle" type="button">Toggle theme</button>
+    </div>
+  </div>
+
+  <section class="hero">
+    <div class="card">
+      <div class="kicker">Less keyword noise</div>
+      <h1>Ask a question and get a focused answer, not just word matches.</h1>
+      <p>This version ranks document sections by meaning and intent using an AI-style semantic score, then writes a concise answer from the best matching extracts instead of dumping lots of loose keyword hits.</p>
+      <div class="chips">
+        <span class="chip">Question-first UX</span>
+        <span class="chip">Semantic ranking</span>
+        <span class="chip">Evidence shown</span>
+      </div>
+      <div class="meter">
+        <div class="metric"><strong id="chunkCount">0</strong><span class="small muted">Knowledge chunks</span></div>
+        <div class="metric"><strong id="sourceCount">0</strong><span class="small muted">Source documents</span></div>
+        <div class="metric"><strong id="confidenceLabel">Ready</strong><span class="small muted">Answer state</span></div>
       </div>
     </div>
-
-    <div class="stack">
-      <section class="panel">
-        <h2 style="margin:0 0 .5rem; font-size:var(--text-sm); text-transform:uppercase; letter-spacing:.1em; color:var(--color-text-muted);">Public source</h2>
-        <p class="small"><strong>Conventions (v12.1) for RdSAP 10</strong><br>Official BRE PDF, 21 August 2025.</p><p class="small warn">This version tries to fetch the live BRE PDF on load. If the remote host blocks browser access with CORS, the app falls back to embedded extracts.</p>
-        <div class="divider"></div>
-        <a class="link-btn" href="https://bregroup.com/documents/d/bre-group/rdsap-conventions-v12-1-21-august-2025-final" target="_blank" rel="noopener noreferrer">Open BRE PDF</a>
-      </section>
-
-      <section class="panel">
-        <h2 style="margin:0 0 .5rem; font-size:var(--text-sm); text-transform:uppercase; letter-spacing:.1em; color:var(--color-text-muted);">Add more files</h2>
-        <label class="upload-label">
-          Upload PDF or TXT
-          <input id="fileInput" type="file" accept=".pdf,.txt,text/plain,application/pdf" multiple>
-        </label>
-        <p class="small">Uploaded documents are scanned in the browser and added next to the BRE document in the same searchable index.</p>
-      </section>
-
-      <section class="panel">
-        <h2 style="margin:0 0 .5rem; font-size:var(--text-sm); text-transform:uppercase; letter-spacing:.1em; color:var(--color-text-muted);">Current sources</h2>
-        <div id="sourceList" class="source-list"></div>
-      </section>
-
-      <section class="panel">
-        <h2 style="margin:0 0 .5rem; font-size:var(--text-sm); text-transform:uppercase; letter-spacing:.1em; color:var(--color-text-muted);">Mode</h2>
-        <button class="theme-toggle" data-theme-toggle>Toggle light/dark</button>
-      </section>
+    <div class="card">
+      <h2>Suggested questions</h2>
+      <div class="quick">
+        <button data-q="When is a basement included in the assessment?">Basements</button>
+        <button data-q="How are roof rooms classified and measured?">Roof rooms</button>
+        <button data-q="When can default U-values be overwritten?">U-values</button>
+        <button data-q="What counts as a highly glazed door or window?">Windows</button>
+      </div>
+      <div class="banner small">This is still a static-site build, but it behaves much more like an assistant by ranking likely meaning, filtering weak matches, and composing a direct answer from the strongest evidence.</div>
+      <div class="sources" id="sourceList"></div>
     </div>
-  </aside>
+  </section>
 
-  <main class="main" id="main">
-    <section class="hero">
-      <div class="hero-card">
-        <div class="kicker">Search + AI + auto scan</div>
-        <h1>Ask questions across the BRE conventions and any extra files you add.</h1>
-        <p>This version is set up for GitHub Pages and can auto-scan uploaded PDFs or text files directly in the browser, then add them beside the built-in RdSAP content for search and question answering.</p>
-        <div class="chips">
-          <span class="chip" id="sourceStatus">Source status: embedded fallback</span>
-          <span class="chip">Public static hosting</span>
-          <span class="chip">Live PDF fetch attempt</span>
-          <span class="chip">Multi-document answers</span>
-        </div>
-        <div class="metrics">
-          <div class="metric"><strong id="chunkMetric">0</strong><span>Search chunks</span></div>
-          <div class="metric"><strong id="sourceMetric">0</strong><span>Source documents</span></div>
-          <div class="metric"><strong>GitHub Pages</strong><span>Ready structure</span></div>
-        </div>
+  <section class="grid">
+    <div class="card">
+      <h2>Ask the document</h2>
+      <div class="toolbar">
+        <input id="questionInput" class="input" type="text" placeholder="Ask a full question in plain English" />
+        <button id="askBtn" class="btn" type="button">Answer</button>
       </div>
-      <div class="hero-card">
-        <h2 style="margin:0 0 1rem; font-size:var(--text-lg)">Quick questions</h2>
-        <div class="quick-questions">
-          <button type="button" data-question="When is a basement included in the assessment?">Basements</button>
-          <button type="button" data-question="How are roof rooms classified and measured?">Roof rooms</button>
-          <button type="button" data-question="What counts as a highly glazed door or window?">Windows</button>
-          <button type="button" data-question="When can default U-values be overwritten?">U-values</button>
-        </div>
-        <div class="divider"></div>
-        <p class="small">Tip: upload another PDF or text guidance file, then ask a combined question. The answer panel will cite the strongest extracts from all loaded sources.</p>
-      </div>
-    </section>
-
-    <section class="workspace">
-      <section class="panel">
-        <h2 style="margin:0 0 1rem; font-size:var(--text-sm); text-transform:uppercase; letter-spacing:.1em; color:var(--color-text-muted);">Search</h2>
-        <div class="toolbar">
-          <input id="searchInput" class="input" type="text" placeholder="Search term, phrase, convention number, or topic" aria-label="Search documents">
-          <button id="searchBtn" class="btn" type="button">Search</button>
-        </div>
-        <div id="searchResults" class="results"></div>
-      </section>
-
-      <section class="panel">
-        <h2 style="margin:0 0 1rem; font-size:var(--text-sm); text-transform:uppercase; letter-spacing:.1em; color:var(--color-text-muted);">Ask</h2>
-        <div class="toolbar">
-          <input id="askInput" class="input" type="text" placeholder="Ask a question across all loaded documents" aria-label="Ask a question">
-          <button id="askBtn" class="btn" type="button">Answer</button>
-        </div>
-        <div id="answerArea" class="answers"></div>
-        <div class="divider"></div>
-        <h2 style="margin:0 0 1rem; font-size:var(--text-sm); text-transform:uppercase; letter-spacing:.1em; color:var(--color-text-muted);">Supporting extracts</h2>
-        <div id="matchArea" class="matches"></div>
-      </section>
-    </section>
-  </main>
+      <div id="answerArea" class="results"></div>
+    </div>
+    <div class="card">
+      <h2>Supporting evidence</h2>
+      <div id="evidenceArea" class="results"></div>
+    </div>
+  </section>
 </div>
 
 <script type="module">
-  import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.min.mjs';
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.worker.min.mjs';
+import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
 
-  const BASE_DOC = {
-    id: 'bre-rdsap-v12-1',
-    name: 'BRE RdSAP Conventions v12.1',
-    type: 'built-in',
-    url: 'https://bregroup.com/documents/d/bre-group/rdsap-conventions-v12-1-21-august-2025-final',
-    chunks: [
-      {id:'1.01', page:1, topic:'Use of RdSAP', text:'RdSAP is used to produce Energy Performance Certificates for existing dwellings only. This edition of the conventions is for use in conjunction with RdSAP 10, and where a convention conflicts with the published SAP specification, the convention takes precedence. Use RdSAP v10 Table 32 when referring to fuel prices.'},
-      {id:'1.02', page:1, topic:'Flat, maisonette, bungalow', text:'A dwelling that does not extend to all storeys of the building is a flat or maisonette, and RdSAP makes no distinction between those two in calculations. A bungalow has all habitable accommodation on one floor only, excluding chalet bungalows and bungalows with rooms in the roof, which are treated as houses.'},
-      {id:'2.05', page:4, topic:'Basements', text:'A basement is a floor partly or entirely below ground level, with at least 50 percent of the heat loss perimeter below ground. Include a basement when it is accessed via a permanent fixed staircase that can be walked down facing forwards and either it is heated by fixed emitters or it is open to the rest of the dwelling with no door. If it is included, it becomes the lowest occupied floor and internal dimensions must be used throughout the assessment. If it does not meet the criteria, exclude it and treat the floor above as suspended above unheated space.'},
-      {id:'2.06', page:6, topic:'Roof rooms and attics', text:'Roof rooms are included when accessed via a permanent fixed staircase that can be walked down facing forwards. To be classed as a roof room rather than a separate storey, there must be no common wall, or the common wall height must be 1.8 metres or less for at least 50 percent of the common wall, excluding gable ends or party walls. The convention distinguishes Type 1 roof rooms fully within the roof and Type 2 rooms in roof not fully within the roof where an accessible common wall forms part of the room. If any roof room element has known insulation levels, the detailed assessment method must be used and all elements measured.'},
-      {id:'2.13', page:10, topic:'Alternative wall', text:'An alternative wall can be a sheltered wall to an unheated corridor or stairwell, a wall with different construction type or heat-loss characteristics from the main wall, or both. RdSAP 10 allows two alternative walls per building part but only one sheltered wall. Always include the alternative wall if sheltered, regardless of size, but disregard non-sheltered alternative walls if they are less than 10 percent of the total exposed wall area of the building part including windows and doors. For stone walls, use alternative wall if thickness varies by more than 100 millimetres.'},
-      {id:'2.14', page:12, topic:'Definition of window', text:'A window is an opening in an external wall or roof fitted with glass or similar material that admits light. A door may be treated as a window if it is highly glazed, such as patio doors, fully glazed doors, or French doors. If in doubt, measure it and treat it as a window if the glazing area is 60 percent or more.'},
-      {id:'2.15', page:12, topic:'Window area', text:'Assessors must measure and enter the width and height of all relevant windows, including visible frame, between internal reveals and from inner sill to top reveal. Relevant windows include all windows, highly glazed doors, and roof lights in heat loss envelopes, including between the dwelling and a separated conservatory, unheated corridor, or excluded porch.'},
-      {id:'3.04', page:20, topic:'Access to loft insulation', text:'Where safe and practicable loft access is possible, loft insulation should be measured and photographed. No access means there is no loft hatch or other means of access. If there is access but it cannot be used on the visit date, record access with loft insulation unknown. If the loft is fully obstructed, record pitched roof with access and loft insulation unknown unless the occupier provides documentary evidence or exposes the insulation.'},
-      {id:'3.08', page:24, topic:'U-value entry', text:'Default U-values of existing elements must not be overwritten unless specific documentary evidence for the property is provided and the calculation follows BR 443. Evidence must be either relevant building control approval correctly defining the construction and stating the calculated U-value, or a U-value calculation produced or verified by a suitably qualified person. The U-value entered must represent the whole element including added insulation.'},
-      {id:'3.10', page:25, topic:'Windows U-values and g-values', text:'Default U-values and g-values for windows can be overwritten only if documentary evidence is available, such as a Window Energy Rating certificate or manufacturer documentation applicable to the property being assessed.'}
-    ]
-  };
+const BASE_DOCS = [
+  {source:'BRE RdSAP Conventions v12.1', id:'2.05', page:4, topic:'Basements', text:'A basement is a floor partly or entirely below ground level, with at least 50 percent of the heat loss perimeter below ground. Include a basement when it is accessed via a permanent fixed staircase that can be walked down facing forwards and either it is heated by fixed emitters or it is open to the rest of the dwelling with no door. If it is included, it becomes the lowest occupied floor and internal dimensions must be used throughout the assessment. If it does not meet the criteria, exclude it and treat the floor above as suspended above unheated space.'},
+  {source:'BRE RdSAP Conventions v12.1', id:'2.06', page:6, topic:'Roof rooms and attics', text:'Roof rooms are included when accessed via a permanent fixed staircase that can be walked down facing forwards. To be classed as a roof room rather than a separate storey, there must be no common wall, or the common wall height must be 1.8 metres or less for at least 50 percent of the common wall, excluding gable ends or party walls. The convention distinguishes Type 1 roof rooms fully within the roof and Type 2 rooms in roof not fully within the roof where an accessible common wall forms part of the room. If any roof room element has known insulation levels, the detailed assessment method must be used and all elements measured.'},
+  {source:'BRE RdSAP Conventions v12.1', id:'2.13', page:10, topic:'Alternative wall', text:'An alternative wall can be a sheltered wall to an unheated corridor or stairwell, a wall with different construction type or heat-loss characteristics from the main wall, or both. RdSAP 10 allows two alternative walls per building part but only one sheltered wall. Always include the alternative wall if sheltered, regardless of size, but disregard non-sheltered alternative walls if they are less than 10 percent of the total exposed wall area of the building part including windows and doors. For stone walls, use alternative wall if thickness varies by more than 100 millimetres.'},
+  {source:'BRE RdSAP Conventions v12.1', id:'2.14', page:12, topic:'Definition of window', text:'A window is an opening in an external wall or roof fitted with glass or similar material that admits light. A door may be treated as a window if it is highly glazed, such as patio doors, fully glazed doors, or French doors. If in doubt, measure it and treat it as a window if the glazing area is 60 percent or more.'},
+  {source:'BRE RdSAP Conventions v12.1', id:'2.15', page:12, topic:'Window area', text:'Assessors must measure and enter the width and height of all relevant windows, including visible frame, between internal reveals and from inner sill to top reveal. Relevant windows include all windows, highly glazed doors, and roof lights in heat loss envelopes, including between the dwelling and a separated conservatory, unheated corridor, or excluded porch.'},
+  {source:'BRE RdSAP Conventions v12.1', id:'3.04', page:20, topic:'Access to loft insulation', text:'Where safe and practicable loft access is possible, loft insulation should be measured and photographed. No access means there is no loft hatch or other means of access. If there is access but it cannot be used on the visit date, record access with loft insulation unknown. If the loft is fully obstructed, record pitched roof with access and loft insulation unknown unless the occupier provides documentary evidence or exposes the insulation.'},
+  {source:'BRE RdSAP Conventions v12.1', id:'3.08', page:24, topic:'U-value entry', text:'Default U-values of existing elements must not be overwritten unless specific documentary evidence for the property is provided and the calculation follows BR 443. Evidence must be either relevant building control approval correctly defining the construction and stating the calculated U-value, or a U-value calculation produced or verified by a suitably qualified person. The U-value entered must represent the whole element including added insulation.'},
+  {source:'BRE RdSAP Conventions v12.1', id:'3.10', page:25, topic:'Windows U-values and g-values', text:'Default U-values and g-values for windows can be overwritten only if documentary evidence is available, such as a Window Energy Rating certificate or manufacturer documentation applicable to the property being assessed.'}
+];
 
-  const state = {
-    docs: [BASE_DOC],
-    chunks: [],
-    theme: 'light'
-  };
+const state = { docs: [...BASE_DOCS], extractor: null, embeddings: [], ready: false };
+const els = {
+  questionInput: document.getElementById('questionInput'),
+  askBtn: document.getElementById('askBtn'),
+  answerArea: document.getElementById('answerArea'),
+  evidenceArea: document.getElementById('evidenceArea'),
+  chunkCount: document.getElementById('chunkCount'),
+  sourceCount: document.getElementById('sourceCount'),
+  sourceList: document.getElementById('sourceList'),
+  confidenceLabel: document.getElementById('confidenceLabel'),
+  modeStatus: document.getElementById('modeStatus'),
+  themeToggle: document.getElementById('themeToggle')
+};
 
-  const STOPWORDS = new Set(['the','and','for','with','that','this','from','into','when','what','does','about','have','there','they','them','your','their','where','which','only','must','used','use','than','then','also','such','will','been','being','under','more','less','into','over','part','parts','each','it','is','a','an','of','to','in','on','or','if','as','be','by','at','are']);
+function cosine(a, b) {
+  let dot = 0, magA = 0, magB = 0;
+  for (let i = 0; i < a.length; i++) { dot += a[i] * b[i]; magA += a[i] * a[i]; magB += b[i] * b[i]; }
+  return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+}
 
-  const els = {
-    searchInput: document.getElementById('searchInput'),
-    askInput: document.getElementById('askInput'),
-    searchBtn: document.getElementById('searchBtn'),
-    askBtn: document.getElementById('askBtn'),
-    searchResults: document.getElementById('searchResults'),
-    answerArea: document.getElementById('answerArea'),
-    matchArea: document.getElementById('matchArea'),
-    fileInput: document.getElementById('fileInput'),
-    sourceList: document.getElementById('sourceList'),
-    chunkMetric: document.getElementById('chunkMetric'),
-    sourceMetric: document.getElementById('sourceMetric'),
-    themeToggle: document.querySelector('[data-theme-toggle]'),
-    sourceStatus: document.getElementById('sourceStatus')
-  };
+function renderMeta() {
+  els.chunkCount.textContent = state.docs.length;
+  els.sourceCount.textContent = new Set(state.docs.map(d => d.source)).size;
+  els.sourceList.innerHTML = [...new Set(state.docs.map(d => d.source))].map(s => `<div class="result small">${s}</div>`).join('');
+}
 
-  function rebuildIndex() {
-    state.chunks = state.docs.flatMap(doc => doc.chunks.map(chunk => ({...chunk, source: doc.name, sourceId: doc.id, sourceType: doc.type})));
-    els.chunkMetric.textContent = state.chunks.length;
-    els.sourceMetric.textContent = state.docs.length;
-    renderSources();
+async function initEmbeddings() {
+  els.modeStatus.textContent = 'AI mode: loading semantic model';
+  els.confidenceLabel.textContent = 'Loading';
+  state.extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+  const outputs = await state.extractor(state.docs.map(d => `${d.topic}. ${d.text}`), { pooling: 'mean', normalize: true });
+  state.embeddings = outputs.tolist();
+  state.ready = true;
+  els.modeStatus.textContent = 'AI mode: semantic ranking ready';
+  els.confidenceLabel.textContent = 'Ready';
+}
+
+function composeAnswer(question, ranked) {
+  if (!ranked.length || ranked[0].score < 0.30) {
+    return { answer: 'I do not have enough relevant material to answer that confidently from the loaded RdSAP content. Try a more specific question.', level: 'Low confidence' };
   }
+  const top = ranked[0].doc;
+  const extra = ranked[1]?.doc;
+  let answer = `${top.topic}: ${top.text}`;
+  if (extra && ranked[1].score > 0.34) answer += ` Related guidance: ${extra.text}`;
+  return { answer, level: ranked[0].score > 0.52 ? 'High confidence' : 'Medium confidence' };
+}
 
-  function renderSources() {
-    els.sourceList.innerHTML = state.docs.map(doc => `<span class="source-pill">${doc.name}</span>`).join('');
-  }
+async function askQuestion() {
+  const question = els.questionInput.value.trim();
+  if (!question) return;
+  els.answerArea.innerHTML = '<div class="result">Thinking...</div>';
+  els.evidenceArea.innerHTML = '<div class="result">Finding the best evidence...</div>';
+  if (!state.ready) await initEmbeddings();
+  const q = await state.extractor(question, { pooling: 'mean', normalize: true });
+  const qv = q.tolist()[0];
+  const ranked = state.docs.map((doc, i) => ({ doc, score: cosine(qv, state.embeddings[i]) }))
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 4);
+  const composed = composeAnswer(question, ranked);
+  els.confidenceLabel.textContent = composed.level;
+  els.answerArea.innerHTML = `<div class="result"><div class="answer">${composed.answer}</div><span class="cite">${composed.level}</span></div>`;
+  els.evidenceArea.innerHTML = ranked.map(r => `<div class="result"><strong>${r.doc.id} · ${r.doc.topic}</strong><p>${r.doc.text}</p><span class="cite">${r.doc.source} · p.${r.doc.page} · similarity ${r.score.toFixed(2)}</span></div>`).join('');
+}
 
-  function tokenize(text) {
-    return text.toLowerCase().replace(/[^a-z0-9.%/ ]+/g, ' ').split(/\s+/).filter(Boolean);
-  }
-
-  function scoreChunk(query, chunk) {
-    const q = tokenize(query);
-    const body = `${chunk.id || ''} ${chunk.topic || ''} ${chunk.text} ${chunk.source}`.toLowerCase();
-    let score = 0;
-    q.forEach(term => {
-      if (STOPWORDS.has(term)) return;
-      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const matches = body.match(new RegExp(`\\b${escaped}\\b`, 'g'));
-      if (matches) score += matches.length * 4;
-      if ((chunk.topic || '').toLowerCase().includes(term)) score += 6;
-      if ((chunk.id || '').toLowerCase() === term) score += 15;
-    });
-    if (body.includes(query.toLowerCase())) score += 12;
-    return score;
-  }
-
-  function findMatches(query, limit = 8) {
-    return state.chunks
-      .map(chunk => ({...chunk, score: scoreChunk(query, chunk)}))
-      .filter(item => item.score > 0)
-      .sort((a,b) => b.score - a.score)
-      .slice(0, limit);
-  }
-
-  function highlight(text, query) {
-    const terms = [...new Set(tokenize(query).filter(t => !STOPWORDS.has(t) && t.length > 2))].slice(0, 8);
-    let out = text;
-    terms.forEach(term => {
-      const rx = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'ig');
-      out = out.replace(rx, '<span class="highlight">$1</span>');
-    });
-    return out;
-  }
-
-  function renderSearch(query) {
-    const matches = findMatches(query, 10);
-    if (!query.trim()) {
-      els.searchResults.innerHTML = '<div class="empty">Type a term, convention number, or phrase to search.</div>';
-      return;
-    }
-    if (!matches.length) {
-      els.searchResults.innerHTML = '<div class="empty">No strong matches found. Try shorter keywords or upload another guidance file.</div>';
-      return;
-    }
-    els.searchResults.innerHTML = matches.map(item => `
-      <article class="card">
-        <h3>${item.id ? `${item.id} · ` : ''}${item.topic || 'Extract'}</h3>
-        <p>${highlight(item.text, query)}</p>
-        <span class="cite">${item.source}${item.page ? ` · Page ${item.page}` : ''}</span>
-      </article>
-    `).join('');
-  }
-
-  function composeAnswer(question, matches) {
-    if (!matches.length) {
-      return {
-        answer: 'I could not find a strong match in the loaded documents. Try a shorter question, a key phrase, or upload an additional file.',
-        citations: []
-      };
-    }
-    const top = matches.slice(0, 3);
-    const answer = top.map((m, idx) => idx === 0
-      ? `${m.topic || 'Relevant guidance'}: ${m.text}`
-      : `Related extract from ${m.source}: ${m.text}`
-    ).join(' ');
-    return {
-      answer,
-      citations: top.map(m => `${m.source}${m.id ? ` · ${m.id}` : ''}${m.page ? ` (p.${m.page})` : ''}`)
-    };
-  }
-
-  function renderAnswer(question) {
-    const matches = findMatches(question, 6);
-    const composed = composeAnswer(question, matches);
-    els.answerArea.innerHTML = `
-      <article class="card">
-        <h3>Answer</h3>
-        <p>${composed.answer}</p>
-        <div class="chips" style="margin-top:1rem;">${composed.citations.map(c => `<span class="chip">${c}</span>`).join('')}</div>
-      </article>
-    `;
-    els.matchArea.innerHTML = matches.length ? matches.map(item => `
-      <article class="card">
-        <h3>${item.id ? `${item.id} · ` : ''}${item.topic || 'Extract'}</h3>
-        <p>${highlight(item.text, question)}</p>
-        <span class="cite">${item.source}${item.page ? ` · Page ${item.page}` : ''}</span>
-      </article>
-    `).join('') : '<div class="empty">No supporting extracts available.</div>';
-  }
-
-  function chunkText(text, fileName) {
-    const normalized = text.replace(/\s+/g, ' ').trim();
-    const pieces = normalized.match(/.{1,900}(?:\s|$)/g) || [];
-    return pieces.map((piece, index) => ({
-      id: `${fileName}-chunk-${index + 1}`,
-      topic: `Imported extract ${index + 1}`,
-      text: piece.trim()
-    })).filter(chunk => chunk.text.length > 40);
-  }
-
-  async function extractPdfText(file) {
-    const data = new Uint8Array(await file.arrayBuffer());
-    const pdf = await pdfjsLib.getDocument({ data }).promise;
-    const pageTexts = [];
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(' ').replace(/\s+/g, ' ').trim();
-      if (pageText) pageTexts.push({ page: i, text: pageText });
-    }
-    return pageTexts;
-  }
-
-  async function importFile(file) {
-    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-      const pages = await extractPdfText(file);
-      const chunks = pages.flatMap(pageObj => chunkText(pageObj.text, file.name).map(c => ({...c, page: pageObj.page})));
-      return { id: `upload-${crypto.randomUUID()}`, name: file.name, type: 'uploaded-pdf', chunks };
-    }
-    const text = await file.text();
-    return { id: `upload-${crypto.randomUUID()}`, name: file.name, type: 'uploaded-text', chunks: chunkText(text, file.name) };
-  }
-
-
-  async function loadRemoteBrePdf() {
-    try {
-      const response = await fetch(BASE_DOC.url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = new Uint8Array(await response.arrayBuffer());
-      const pdf = await pdfjsLib.getDocument({ data }).promise;
-      const remoteChunks = [];
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ').replace(/\s+/g, ' ').trim();
-        if (!pageText) continue;
-        const split = chunkText(pageText, 'BRE-live');
-        split.forEach(c => remoteChunks.push({ ...c, page: i, topic: `BRE live page ${i}` }));
-      }
-      if (remoteChunks.length) {
-        state.docs = state.docs.filter(doc => doc.id !== BASE_DOC.id);
-        state.docs.unshift({ ...BASE_DOC, name: 'BRE RdSAP Conventions v12.1 (live fetch)', chunks: remoteChunks, type: 'live-pdf' });
-        els.sourceStatus.textContent = 'Source status: live BRE PDF loaded';
-        rebuildIndex();
-        renderSearch(els.searchInput.value || 'roof rooms');
-        renderAnswer(els.askInput.value || 'When is a basement included in the assessment?');
-      }
-    } catch (error) {
-      els.sourceStatus.textContent = 'Source status: fallback copy in use';
-      const note = document.createElement('div');
-      note.className = 'empty';
-      note.innerHTML = 'Live PDF fetch was blocked or unavailable, so the app is using embedded BRE extracts. This is common when the remote server does not allow browser CORS access.';
-      document.querySelector('.main').prepend(note);
-    }
-  }
-
-  async function handleUploads(files) {
-    const list = [...files];
-    if (!list.length) return;
-    els.sourceList.innerHTML = '<span class="source-pill">Scanning uploaded files...</span>';
-    for (const file of list) {
-      try {
-        const doc = await importFile(file);
-        if (doc.chunks.length) state.docs.push(doc);
-      } catch (error) {
-        state.docs.push({ id: `failed-${crypto.randomUUID()}`, name: `${file.name} (scan failed)`, type: 'error', chunks: [{ id: '', topic: 'Scan failed', text: `The file could not be scanned in the browser. ${error.message || error}` }] });
-      }
-    }
-    rebuildIndex();
-    renderSearch(els.searchInput.value || 'roof rooms');
-    renderAnswer(els.askInput.value || 'What guidance is loaded right now?');
-  }
-
-  els.searchBtn.addEventListener('click', () => renderSearch(els.searchInput.value));
-  els.askBtn.addEventListener('click', () => renderAnswer(els.askInput.value));
-  els.searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') renderSearch(els.searchInput.value); });
-  els.askInput.addEventListener('keydown', e => { if (e.key === 'Enter') renderAnswer(els.askInput.value); });
-  els.fileInput.addEventListener('change', e => handleUploads(e.target.files));
-  document.querySelectorAll('[data-question]').forEach(btn => btn.addEventListener('click', () => {
-    els.askInput.value = btn.dataset.question;
-    renderAnswer(btn.dataset.question);
-  }));
-
-  (function initTheme(){
-    const root = document.documentElement;
-    state.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    root.setAttribute('data-theme', state.theme);
-    const sync = () => {
-      els.themeToggle.textContent = state.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
-      els.themeToggle.setAttribute('aria-label', els.themeToggle.textContent);
-    };
-    sync();
-    els.themeToggle.addEventListener('click', () => {
-      state.theme = state.theme === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', state.theme);
-      sync();
-    });
-  })();
-
-  rebuildIndex();
-  els.sourceStatus.textContent = 'Source status: checking live BRE PDF';
-  renderSearch('roof rooms');
-  renderAnswer('When is a basement included in the assessment?');
-  loadRemoteBrePdf();
+document.querySelectorAll('[data-q]').forEach(btn => btn.addEventListener('click', () => { els.questionInput.value = btn.dataset.q; askQuestion(); }));
+els.askBtn.addEventListener('click', askQuestion);
+els.questionInput.addEventListener('keydown', e => { if (e.key === 'Enter') askQuestion(); });
+els.themeToggle.addEventListener('click', () => document.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
+renderMeta();
+els.questionInput.value = 'When is a basement included in the assessment?';
+askQuestion();
 </script>
 </body>
 </html>
